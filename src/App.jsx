@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 function App() {
   // const [token, setToken] = useState("");
@@ -11,6 +11,22 @@ function App() {
   const [response, setResponse] = useState(null);
   const [loading, setLoading] = useState(false);
   const [remaining, setRemaining] = useState(null);
+  const turnstileRef = useRef(null);
+  const [widgetId, setWidgetId] = useState(null);
+
+  // Explicit render on mount
+  useEffect(() => {
+    if (turnstileRef.current && window.turnstile) {
+      const id = window.turnstile.render(turnstileRef.current, {
+        sitekey: import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY,
+        theme: 'dark',
+        callback: (token) => {
+          console.log("✅ Turnstile Verified:", token);
+        },
+      });
+      setWidgetId(id);
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,18 +34,28 @@ function App() {
     setResponse(null);
 
     try {
-      const tokenInput = document.querySelector(
-  '[name="cf-turnstile-response"]'
-);
+      const tokenInput = document.querySelector('[name="cf-turnstile-response"]');
+      const token = tokenInput ? tokenInput.value : null;
+      
+      console.log("Extracted Token:", token);
 
-const token = tokenInput?.value;
-  console.log("TOKEN:", token)
+      if (!token) {
+        setResponse({ status: 'CLIENT_ERR', data: { error: 'Security Check Required', message: 'Please complete the Turnstile challenge.' } });
+        setLoading(false);
+        return;
+      }
+
+      console.log("🚀 Payload Testing:", { ...formData, token });
+
       const res = await fetch('https://basic-backend-rate-limiting-test.onrender.com/api/contact', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...formData,token }),
+        body: JSON.stringify({
+          ...formData,
+          token: token
+        }),
       });
 
       const data = await res.json();
@@ -97,14 +123,7 @@ const token = tokenInput?.value;
             />
           </div>
 
-         <div
-  className="cf-turnstile"
-  data-sitekey={
-    import.meta.env
-      .VITE_CLOUDFLARE_TURNSTILE_SITE_KEY
-  }
-  data-theme="dark"
-></div>
+           <div ref={turnstileRef} className="my-2 flex justify-center"></div>
 
           <button 
             type="submit"
