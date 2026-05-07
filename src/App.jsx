@@ -34,18 +34,14 @@ function App() {
     setResponse(null);
 
     try {
-      const tokenInput = document.querySelector('[name="cf-turnstile-response"]');
-      const token = tokenInput ? tokenInput.value : null;
+      // 1. Get the token from the global turnstile object
+      const token = window.turnstile.getResponse(widgetId);
       
-      console.log("Extracted Token:", token);
-
       if (!token) {
         setResponse({ status: 'CLIENT_ERR', data: { error: 'Security Check Required', message: 'Please complete the Turnstile challenge.' } });
         setLoading(false);
         return;
       }
-
-      console.log("🚀 Payload Testing:", { ...formData, token });
 
       const res = await fetch('https://basic-backend-rate-limiting-test.onrender.com/api/contact', {
         method: 'POST',
@@ -60,7 +56,6 @@ function App() {
 
       const data = await res.json();
       setResponse({ status: res.status, data });
-      
       const rem = res.headers.get('RateLimit-Remaining');
       setRemaining(rem);
 
@@ -68,6 +63,10 @@ function App() {
       setResponse({ status: 'ERR', data: { error: 'Server Connection Failed', message: err.message } });
     } finally {
       setLoading(false);
+      // 2. ALWAYS reset Turnstile so the next click gets a NEW token
+      if (widgetId) {
+        window.turnstile.reset(widgetId);
+      }
     }
   };
 
@@ -79,7 +78,7 @@ function App() {
             Security Tester
           </h1>
           <p className="text-slate-400 text-sm font-medium">
-            Contact Form Rate Limiting (10 per min)
+            Contact Form Rate Limiting (100 in 1 hr)
           </p>
         </header>
 
