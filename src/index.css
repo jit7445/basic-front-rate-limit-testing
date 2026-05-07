@@ -1,4 +1,11 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dark: #0f172a;
+  --color-card: rgba(30, 41, 59, 0.7);
+}
+
 body {
+  @apply bg-slate-950 text-slate-50 min-h-screen;
   margin: 0;
-  background-color: #0f172a;
 }

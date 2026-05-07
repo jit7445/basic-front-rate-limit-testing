@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { Turnstile } from "@marsidev/react-turnstile";
 
 function App() {
+  const [token, setToken] = useState("");
   const [formData, setFormData] = useState({
     name: 'John Doe',
     email: 'john@example.com',
@@ -22,13 +24,12 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData,token }),
       });
 
       const data = await res.json();
       setResponse({ status: res.status, data });
       
-      // Update the "Remaining" count from headers
       const rem = res.headers.get('RateLimit-Remaining');
       setRemaining(rem);
 
@@ -40,117 +41,99 @@ function App() {
   };
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Contact Form Security Tester</h1>
-      <p style={styles.subtitle}>Testing Rate Limiting (10 per 1 min)</p>
+    <div className="min-h-screen bg-[#0f172a] text-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-md mx-auto">
+        <header className="mb-10">
+          <h1 className="text-4xl font-extrabold text-sky-400 tracking-tight mb-2">
+            Security Tester
+          </h1>
+          <p className="text-slate-400 text-sm font-medium">
+            Contact Form Rate Limiting (10 per min)
+          </p>
+        </header>
 
-      {remaining !== null && (
-        <div style={{...styles.badge, backgroundColor: remaining > 0 ? '#065f46' : '#991b1b'}}>
-          Remaining Submissions: <strong>{remaining}</strong>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <div style={styles.inputGroup}>
-          <label style={styles.label}>Name</label>
-          <input 
-            style={styles.input}
-            value={formData.name}
-            onChange={(e) => setFormData({...formData, name: e.target.value})}
-          />
-        </div>
-
-        <div style={styles.inputGroup}>
-          <label style={styles.label}>Email</label>
-          <input 
-            style={styles.input}
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({...formData, email: e.target.value})}
-          />
-        </div>
-
-        <div style={styles.inputGroup}>
-          <label style={styles.label}>Message</label>
-          <textarea 
-            style={{...styles.input, height: '100px'}}
-            value={formData.message}
-            onChange={(e) => setFormData({...formData, message: e.target.value})}
-          />
-        </div>
-
-        <button 
-          style={loading ? {...styles.button, opacity: 0.5} : styles.button} 
-          type="submit"
-          disabled={loading}
-        >
-          {loading ? 'Sending...' : 'Submit Contact Form'}
-        </button>
-      </form>
-
-      {response && (
-        <div style={{...styles.resultContainer, borderColor: response.status === 200 ? '#10b981' : '#ef4444'}}>
-          <div style={styles.status}>
-            Server Status: <span style={{ color: response.status === 200 ? '#10b981' : '#ef4444' }}>{response.status}</span>
+        {remaining !== null && (
+          <div className={`mb-6 p-4 rounded-xl text-center text-sm font-bold shadow-lg transition-all duration-300 ${
+            parseInt(remaining) > 0 ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-500/20' : 'bg-rose-900/30 text-rose-400 border border-rose-500/20'
+          }`}>
+            Remaining Submissions: {remaining}
           </div>
-          <pre style={styles.pre}>
-            {JSON.stringify(response.data, null, 2)}
-          </pre>
-        </div>
-      )}
+        )}
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5 bg-slate-800/40 backdrop-blur-md p-8 rounded-3xl border border-slate-700/50 shadow-2xl">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Name</label>
+            <input 
+              className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all"
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+              placeholder="Your name"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Email</label>
+            <input 
+              className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              placeholder="john@example.com"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Message</label>
+            <textarea 
+              className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-sm min-h-[100px] focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all"
+              value={formData.message}
+              onChange={(e) => setFormData({...formData, message: e.target.value})}
+              placeholder="Tell us something..."
+            />
+          </div>
+
+          <div className="my-2 flex justify-center">
+            <Turnstile
+              siteKey={import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY}
+              onSuccess={(token) => {
+                setToken(token);
+              }}
+              options={{
+                theme: "dark"
+              }}
+            />
+          </div>
+
+          <button 
+            type="submit"
+            disabled={loading || !token}
+            className={`w-full py-4 rounded-xl font-bold text-sm transition-all duration-200 transform active:scale-[0.98] ${
+              loading || !token 
+                ? 'bg-slate-700 text-slate-500 cursor-not-allowed' 
+                : 'bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-lg shadow-sky-500/20'
+            }`}
+          >
+            {loading ? 'Processing...' : 'Submit Contact Form'}
+          </button>
+        </form>
+
+        {response && (
+          <div className={`mt-8 p-6 rounded-2xl border bg-slate-900/50 transition-all duration-500 ${
+            response.status === 200 ? 'border-emerald-500/30' : 'border-rose-500/30'
+          }`}>
+            <div className={`text-xs font-bold uppercase tracking-widest mb-3 ${
+              response.status === 200 ? 'text-emerald-400' : 'text-rose-400'
+            }`}>
+              Server Response: {response.status}
+            </div>
+            <pre className="text-[13px] leading-relaxed text-slate-300 overflow-x-auto font-mono scrollbar-hide">
+              {JSON.stringify(response.data, null, 2)}
+            </pre>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    padding: '40px',
-    maxWidth: '500px',
-    margin: '0 auto',
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-    color: '#f8fafc',
-    backgroundColor: '#0f172a',
-    minHeight: '100vh',
-  },
-  title: { fontSize: '28px', marginBottom: '8px', color: '#38bdf8' },
-  subtitle: { color: '#94a3b8', marginBottom: '24px', fontSize: '14px' },
-  form: { display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '30px' },
-  inputGroup: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  label: { fontSize: '12px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase' },
-  input: {
-    padding: '12px',
-    borderRadius: '8px',
-    border: '1px solid #334155',
-    backgroundColor: '#1e293b',
-    color: 'white',
-    fontSize: '16px',
-  },
-  button: {
-    padding: '14px',
-    borderRadius: '8px',
-    backgroundColor: '#38bdf8',
-    color: '#0f172a',
-    border: 'none',
-    fontWeight: 'bold',
-    fontSize: '16px',
-    cursor: 'pointer',
-    marginTop: '10px',
-  },
-  badge: {
-    padding: '12px',
-    borderRadius: '8px',
-    marginBottom: '20px',
-    textAlign: 'center',
-    fontSize: '14px',
-  },
-  resultContainer: {
-    backgroundColor: '#1e293b',
-    borderRadius: '8px',
-    padding: '20px',
-    border: '1px solid #334155',
-  },
-  status: { marginBottom: '10px', fontSize: '14px', fontWeight: 'bold' },
-  pre: { margin: 0, fontSize: '13px', whiteSpace: 'pre-wrap', color: '#cbd5e1' }
-};
 
 export default App;
