@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 function App() {
-  const [token, setToken] = useState("");
+  // const [token, setToken] = useState("");
   const [formData, setFormData] = useState({
     name: 'John Doe',
     email: 'john@example.com',
@@ -108,9 +108,9 @@ const token = tokenInput?.value;
 
           <button 
             type="submit"
-            disabled={loading || !token}
+            disabled={loading}
             className={`w-full py-4 rounded-xl font-bold text-sm transition-all duration-200 transform active:scale-[0.98] ${
-              loading || !token 
+              loading 
                 ? 'bg-slate-700 text-slate-500 cursor-not-allowed' 
                 : 'bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-lg shadow-sky-500/20'
             }`}
