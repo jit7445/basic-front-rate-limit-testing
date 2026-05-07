@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Turnstile } from "@marsidev/react-turnstile";
 
 function App() {
   const [token, setToken] = useState("");
@@ -19,6 +18,12 @@ function App() {
     setResponse(null);
 
     try {
+      const tokenInput = document.querySelector(
+  '[name="cf-turnstile-response"]'
+);
+
+const token = tokenInput?.value;
+  console.log("TOKEN:", token)
       const res = await fetch('https://basic-backend-rate-limiting-test.onrender.com/api/contact', {
         method: 'POST',
         headers: {
@@ -92,17 +97,14 @@ function App() {
             />
           </div>
 
-          <div className="my-2 flex justify-center">
-            <Turnstile
-              siteKey={import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY}
-              onSuccess={(token) => {
-                setToken(token);
-              }}
-              options={{
-                theme: "dark"
-              }}
-            />
-          </div>
+         <div
+  className="cf-turnstile"
+  data-sitekey={
+    import.meta.env
+      .VITE_CLOUDFLARE_TURNSTILE_SITE_KEY
+  }
+  data-theme="dark"
+></div>
 
           <button 
             type="submit"
